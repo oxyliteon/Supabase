@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crimson Cloud - Supabase Era</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }
+        .kotak { background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input, button { padding: 10px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h2>Crimson Cloud Studio - Supabase DB</h2>
+
+    <div class="kotak">
+        <h3>Tambah Member (Create)</h3>
+        <input type="text" id="namaInput" placeholder="Nama Member">
+        <input type="text" id="statusInput" placeholder="Aktif / Amnesia">
+        <button onclick="tambahData()">Simpan ke Supabase</button>
+    </div>
+
+    <div class="kotak">
+        <h3>Daftar Member (Read)</h3>
+        <button onclick="ambilData()">Muat Ulang Data</button>
+        <ul id="daftarMember"></ul>
+    </div>
+
+    <script>
+        // 1. PENGGANTI KONEKSI.PHP
+        const SUPABASE_URL = 'https://jdcspfrjjoedbatyusvi.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkY3NwZnJqam9lZGJhdHl1c3ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4ODM5NzIsImV4cCI6MjA5OTQ1OTk3Mn0.9iWLPoODIg7GGor-QiOm1ohzprXpHK3M7NUBF2kQZPk';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 2. FUNGSI READ (Mengambil Data)
+        async function ambilData() {
+            // Sintaksnya sangat mirip bahasa manusia, menggantikan SELECT * FROM
+            const { data, error } = await supabase
+                .from('member')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) {
+                console.error("Error ngambil data:", error);
+                return;
+            }
+
+            const list = document.getElementById('daftarMember');
+            list.innerHTML = ''; 
+            data.forEach(member => {
+                list.innerHTML += `<li>${member.nama} - Status: ${member.status}</li>`;
+            });
+        }
+
+        // 3. FUNGSI CREATE (Menambah Data)
+        async function tambahData() {
+            const nama = document.getElementById('namaInput').value;
+            const status = document.getElementById('statusInput').value;
+
+            // Pengganti INSERT INTO yang berantakan
+            const { error } = await supabase
+                .from('member')
+                .insert([ { nama: nama, status: status } ]);
+
+            if (error) {
+                alert("Gagal masukkin data: " + error.message);
+            } else {
+                alert("Data sukses ditarik ke awan!");
+                ambilData(); // Otomatis refresh list di bawah
+            }
+        }
+
+        // Otomatis muat data saat web pertama kali dibuka
+        ambilData();
+    </script>
+</body>
+</html>
