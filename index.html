@@ -1,76 +1,249 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crimson Cloud - Supabase Era</title>
+    <!-- Memanggil Library Supabase langsung dari CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }
-        .kotak { background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        input, button { padding: 10px; margin: 5px 0; }
+        /* CSS Modern Minimalis (Selamat tinggal garis putus-putus) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2 { color: #38bdf8; text-align: center; margin-bottom: 30px; }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #1e293b;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            border: 1px solid #334155;
+        }
+
+        h3 { color: #94a3b8; font-size: 16px; margin-top: 0; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+
+        /* Styling Form */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; color: #cbd5e1; margin-bottom: 5px; font-weight: bold; }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            background-color: #0f172a;
+            border: 1px solid #475569;
+            color: white;
+            border-radius: 6px;
+            box-sizing: border-box; /* Biar gak jebol ke samping */
+        }
+        
+        input:focus, select:focus { outline: none; border-color: #38bdf8; }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #0369a1; }
+        
+        /* Tombol Delete Merah */
+        .btn-hapus { background-color: #dc2626; padding: 5px 10px; font-size: 12px; width: auto; margin-left: 10px;}
+        .btn-hapus:hover { background-color: #b91c1c; }
+
+        /* Styling List Data */
+        ul { list-style-type: none; padding: 0; margin: 0; }
+        li {
+            background-color: #334155;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        .status-aktif { background-color: #064e3b; color: #34d399; }
+        .status-amnesia { background-color: #7f1d1d; color: #f87171; }
+        
+        .loading { text-align: center; color: #38bdf8; font-style: italic; display: none; }
     </style>
 </head>
 <body>
-    <h2>Crimson Cloud Studio - Supabase DB</h2>
 
-    <div class="kotak">
-        <h3>Tambah Member (Create)</h3>
-        <input type="text" id="namaInput" placeholder="Nama Member">
-        <input type="text" id="statusInput" placeholder="Aktif / Amnesia">
-        <button onclick="tambahData()">Simpan ke Supabase</button>
+    <h2>☁️ Crimson Cloud Studio</h2>
+
+    <!-- KOTAK FORM (CREATE) -->
+    <div class="container">
+        <h3>Catat Ingatan Baru</h3>
+        <div class="form-group">
+            <label>Nama Pasien</label>
+            <input type="text" id="namaInput" placeholder="Contoh: Budi Santoso">
+        </div>
+        <div class="form-group">
+            <label>Status Kejiwaan</label>
+            <select id="statusInput">
+                <option value="Aktif">Aktif (Ingatan Penuh)</option>
+                <option value="Amnesia">Amnesia (Lupa Ingatan)</option>
+            </select>
+        </div>
+        <button onclick="tambahData()" id="btnSimpan">Simpan ke Awan</button>
     </div>
 
-    <div class="kotak">
-        <h3>Daftar Member (Read)</h3>
-        <button onclick="ambilData()">Muat Ulang Data</button>
-        <ul id="daftarMember"></ul>
+    <!-- KOTAK DATA (READ & DELETE) -->
+    <div class="container">
+        <h3>Database Supabase</h3>
+        <p id="pesanLoading" class="loading">Menghubungi satelit...</p>
+        <ul id="daftarMember">
+            <!-- Data dari Supabase akan muncul di sini -->
+        </ul>
     </div>
 
     <script>
-        // 1. PENGGANTI KONEKSI.PHP
+        // ==========================================
+        // 1. KONEKSI KE SUPABASE
+        // Menggunakan kunci rahasia yang kamu dapatkan tadi
+        // ==========================================
         const SUPABASE_URL = 'https://jdcspfrjjoedbatyusvi.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkY3NwZnJqam9lZGJhdHl1c3ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4ODM5NzIsImV4cCI6MjA5OTQ1OTk3Mn0.9iWLPoODIg7GGor-QiOm1ohzprXpHK3M7NUBF2kQZPk';
+        
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 2. FUNGSI READ (Mengambil Data)
+        // Elemen HTML yang akan kita manipulasi
+        const listMember = document.getElementById('daftarMember');
+        const teksLoading = document.getElementById('pesanLoading');
+        const btnSimpan = document.getElementById('btnSimpan');
+
+        // ==========================================
+        // 2. FUNGSI MENGAMBIL DATA (READ)
+        // ==========================================
         async function ambilData() {
-            // Sintaksnya sangat mirip bahasa manusia, menggantikan SELECT * FROM
+            teksLoading.style.display = 'block'; // Tampilkan tulisan loading
+            listMember.innerHTML = ''; // Kosongkan list lama
+
+            // Perintah SQL modern: SELECT * FROM member ORDER BY id DESC
             const { data, error } = await supabase
                 .from('member')
                 .select('*')
                 .order('id', { ascending: false });
 
+            teksLoading.style.display = 'none'; // Sembunyikan loading
+
             if (error) {
-                console.error("Error ngambil data:", error);
+                alert("Gagal mengambil data: " + error.message);
                 return;
             }
 
-            const list = document.getElementById('daftarMember');
-            list.innerHTML = ''; 
+            // Jika tabel kosong
+            if (data.length === 0) {
+                listMember.innerHTML = '<li style="justify-content:center; color:#94a3b8;">Gudang awan masih kosong.</li>';
+                return;
+            }
+
+            // Looping data dan buat elemen HTML
             data.forEach(member => {
-                list.innerHTML += `<li>${member.nama} - Status: ${member.status}</li>`;
+                // Tentukan warna badge berdasarkan status
+                const kelasBadge = member.status === 'Aktif' ? 'status-aktif' : 'status-amnesia';
+                
+                // Bikin baris data (li)
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <strong>${member.nama}</strong> <br>
+                        <span class="status-badge ${kelasBadge}">${member.status}</span>
+                    </div>
+                    <button class="btn-hapus" onclick="hapusData(${member.id}, '${member.nama}')">Hapus</button>
+                `;
+                listMember.appendChild(li);
             });
         }
 
-        // 3. FUNGSI CREATE (Menambah Data)
+        // ==========================================
+        // 3. FUNGSI MENAMBAH DATA (CREATE)
+        // ==========================================
         async function tambahData() {
-            const nama = document.getElementById('namaInput').value;
-            const status = document.getElementById('statusInput').value;
+            const inputNama = document.getElementById('namaInput');
+            const inputStatus = document.getElementById('statusInput');
+            
+            const nama = inputNama.value.trim();
+            const status = inputStatus.value;
 
-            // Pengganti INSERT INTO yang berantakan
+            // Validasi anti kosong
+            if (nama === "") {
+                alert("Woy! Nama gak boleh kosong!");
+                inputNama.focus();
+                return;
+            }
+
+            btnSimpan.innerText = "Menyimpan...";
+            btnSimpan.disabled = true;
+
+            // Perintah SQL modern: INSERT INTO member (nama, status) VALUES (...)
             const { error } = await supabase
                 .from('member')
                 .insert([ { nama: nama, status: status } ]);
 
+            btnSimpan.innerText = "Simpan ke Awan";
+            btnSimpan.disabled = false;
+
             if (error) {
-                alert("Gagal masukkin data: " + error.message);
+                alert("Gagal simpan: " + error.message);
             } else {
-                alert("Data sukses ditarik ke awan!");
-                ambilData(); // Otomatis refresh list di bawah
+                inputNama.value = ''; // Bersihkan kolom input
+                ambilData(); // Refresh list data di bawah secara otomatis
             }
         }
 
-        // Otomatis muat data saat web pertama kali dibuka
+        // ==========================================
+        // 4. FUNGSI MENGHAPUS DATA (DELETE)
+        // ==========================================
+        async function hapusData(idTarget, namaTarget) {
+            // Konfirmasi (Satpam) sebelum menghapus
+            const yakin = confirm(`Yakin mau menghapus ingatan si ${namaTarget} secara permanen?`);
+            
+            if (yakin) {
+                // Perintah SQL modern: DELETE FROM member WHERE id = idTarget
+                const { error } = await supabase
+                    .from('member')
+                    .delete()
+                    .eq('id', idTarget);
+
+                if (error) {
+                    alert("Gagal hapus: " + error.message);
+                } else {
+                    ambilData(); // Refresh list
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. JALANKAN SAAT WEB PERTAMA KALI DIBUKA
+        // ==========================================
         ambilData();
+        
     </script>
 </body>
 </html>
