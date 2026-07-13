@@ -130,7 +130,8 @@
         const SUPABASE_URL = 'https://jdcspfrjjoedbatyusvi.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkY3NwZnJqam9lZGJhdHl1c3ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4ODM5NzIsImV4cCI6MjA5OTQ1OTk3Mn0.9iWLPoODIg7GGor-QiOm1ohzprXpHK3M7NUBF2kQZPk';
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // UBAH DI SINI: Jangan gunakan nama 'supabase' lagi agar tidak bentrok dengan CDN
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Elemen HTML yang akan kita manipulasi
         const listMember = document.getElementById('daftarMember');
@@ -145,7 +146,8 @@
             listMember.innerHTML = ''; // Kosongkan list lama
 
             // Perintah SQL modern: SELECT * FROM member ORDER BY id DESC
-            const { data, error } = await supabase
+            // UBAH DI SINI: Gunakan 'client'
+            const { data, error } = await client
                 .from('member')
                 .select('*')
                 .order('id', { ascending: false });
@@ -202,7 +204,8 @@
             btnSimpan.disabled = true;
 
             // Perintah SQL modern: INSERT INTO member (nama, status) VALUES (...)
-            const { error } = await supabase
+            // UBAH DI SINI: Gunakan 'client'
+            const { error } = await client
                 .from('member')
                 .insert([ { nama: nama, status: status } ]);
 
@@ -226,7 +229,8 @@
             
             if (yakin) {
                 // Perintah SQL modern: DELETE FROM member WHERE id = idTarget
-                const { error } = await supabase
+                // UBAH DI SINI: Gunakan 'client'
+                const { error } = await client
                     .from('member')
                     .delete()
                     .eq('id', idTarget);
